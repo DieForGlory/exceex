@@ -4,6 +4,7 @@ from flask import Flask
 from .config import Config
 from .extensions import executor, task_statuses, login_manager, db, migrate, socketio
 
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -11,7 +12,11 @@ def create_app():
     login_manager.init_app(app)
     db.init_app(app)
     migrate.init_app(app, db)
-    socketio.init_app(app, async_mode='threading')
+
+    # --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
+    # Добавляем 'message_queue'
+    socketio.init_app(app, async_mode='threading', message_queue='memory://')
+    # --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
     # Создаем необходимые директории
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -25,7 +30,7 @@ def create_app():
     from .services import user_service
     @login_manager.user_loader
     def load_user(user_id):
-        return user_service.get_user_by_id(user_id) # Эта функция будет переписана под DB
+        return user_service.get_user_by_id(user_id)  # Эта функция будет переписана под DB
 
     # Регистрируем все маршруты (blueprints)
     from .routes import register_routes

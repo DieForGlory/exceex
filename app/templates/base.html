@@ -54,6 +54,8 @@
         {% block content %}{% endblock %}
     </main>
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+
+    <script src="{{ url_for('static', filename='js/script.js', v='1.2') }}"></script>
+    </body>
 </html>

@@ -25,6 +25,34 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Socket event (task_complete):', data);
             updateProgress(data.status, 100);
 
+            // --- ОБРАБОТКА ПРЕДУПРЕЖДЕНИЙ ---
+            if (data.warnings && data.warnings.length > 0) {
+                const warningContainer = document.getElementById('warning-container');
+                const warningList = document.getElementById('warning-list');
+
+                if (warningContainer && warningList) {
+                    warningList.innerHTML = ''; // Очищаем старые
+
+                    const maxWarningsToShow = 50;
+                    data.warnings.slice(0, maxWarningsToShow).forEach(msg => {
+                        const li = document.createElement('li');
+                        li.textContent = msg;
+                        warningList.appendChild(li);
+                    });
+
+                    if (data.warnings.length > maxWarningsToShow) {
+                         const li = document.createElement('li');
+                         li.style.fontWeight = 'bold';
+                         li.textContent = `... и еще ${data.warnings.length - maxWarningsToShow} замечаний.`;
+                         warningList.appendChild(li);
+                    }
+
+                    warningContainer.style.display = 'block';
+                }
+            }
+            // --- КОНЕЦ ОБРАБОТКИ ПРЕДУПРЕЖДЕНИЙ ---
+
+
             if (data.result_ready) {
                 // Успех
                 const downloadLink = document.getElementById('download-link');
@@ -77,10 +105,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const progressContainer = document.getElementById('progress-container');
             const downloadLink = document.getElementById('download-link');
 
+            // Находим и сбрасываем контейнер ошибок
+            const warningContainer = document.getElementById('warning-container');
+            const warningList = document.getElementById('warning-list');
+
+
             // Сбрасываем UI перед новым запуском
             errorContainer.style.display = 'none';
             progressContainer.style.display = 'block';
             downloadLink.style.display = 'none';
+
+            // Сбрасываем UI ошибок
+            if (warningContainer && warningList) {
+                warningContainer.style.display = 'none';
+                warningList.innerHTML = '';
+            }
+
 
             // Сброс прогресс-бара
             const statusBar = document.getElementById('progress-bar');
@@ -174,7 +214,6 @@ document.addEventListener('DOMContentLoaded', function() {
         container.appendChild(ruleRow);
     });
 
-    // --- НОВЫЙ БЛОК ---
     // Кнопка для ЗАПОЛНЕНИЯ ИЗ ЯЧЕЙКИ
     document.getElementById('add-source-fill-rule')?.addEventListener('click', function() {
         const container = document.getElementById('source-cell-fill-rules-container');
@@ -189,7 +228,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <button type="button" class="btn btn-danger btn-sm remove-rule-btn" style="align-self: center; margin-top: 1rem;">Удалить</button>`;
         container.appendChild(ruleRow);
     });
-    // --- КОНЕЦ НОВОГО БЛОКА ---
 
     // Кнопка для правил ФОРМУЛ
     document.getElementById('add-formula-rule')?.addEventListener('click', function() {
@@ -214,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('formula-rules-container'),
         document.getElementById('static-value-rules-container'),
         document.getElementById('sheet-settings-container'),
-        document.getElementById('source-cell-fill-rules-container') // <-- ДОБАВЛЕНО
+        document.getElementById('source-cell-fill-rules-container')
     ];
     allContainers.forEach(container => {
         if (container) {
@@ -241,4 +279,4 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-});
+}); // <-- ЭТО ЗАКРЫВАЕТ 'DOMContentLoaded'. Лишней '}' НЕТ.

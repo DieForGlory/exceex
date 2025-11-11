@@ -10,6 +10,8 @@ from flask_login import login_required, current_user
 from flask_socketio import join_room
 
 from app.services.excel_processor import process_excel_hybrid
+# Мы по-прежнему импортируем оба,
+# но будем использовать 'socketio' для этой конкретной задачи
 from app.extensions import executor, task_statuses, socketio
 
 main_bp = Blueprint('main', __name__)
@@ -20,10 +22,24 @@ def handle_join_task_room(data):
     """
     Присоединяет клиента к WebSocket-комнате,
     используя ID его задачи.
+
+    НОВОЕ: Немедленно отправляет текущий статус
+    обратно этому клиенту, чтобы избежать "гонки состояний".
     """
     task_id = data.get('task_id')
     if task_id:
         join_room(task_id)
+
+        # --- НОВЫЙ БЛОК: Отправляем статус сразу при входе ---
+        if task_id in task_statuses:
+            task_data = task_statuses.get(task_id)
+            if task_data:
+                # Отправляем 'status_update' только этому клиенту (request.sid)
+                socketio.emit('status_update', {
+                    'status': task_data.get('status', 'Загрузка...'),
+                    'progress': task_data.get('progress', 0)
+                }, room=request.sid)  # request.sid = только запросившему клиенту
+        # --- КОНЕЦ НОВОГО БЛОКА ---
 
 
 @main_bp.route('/')
@@ -78,7 +94,7 @@ def process_files():
 
     # Инициализация всех переменных
     template_rules, cell_mappings, formula_rules, static_value_rules, sheet_settings = [], [], [], [], []
-    source_cell_fill_rules = []  # <-- НОВАЯ ПЕРЕМЕННАЯ
+    source_cell_fill_rules = []
     original_template_filename = "template.xlsx"
     start_row = 1
     post_function = 'none'
@@ -126,7 +142,7 @@ def process_files():
             sheet_settings = template_data.get('sheet_settings', [])
             post_function = template_data.get('post_function', 'none')
             visible_rows_only = template_data.get('visible_rows_only', False)
-            source_cell_fill_rules = template_data.get('source_cell_fill_rules', [])  # <-- ДОБАВЛЕНО
+            source_cell_fill_rules = template_data.get('source_cell_fill_rules', [])
 
         else:
             # --- РУЧНАЯ НАСТРОЙКА ---
@@ -142,10 +158,11 @@ def process_files():
                 if start_row_match:
                     start_row = int(start_row_match)
 
-            # При ручной настройке доступны только правила по умолчанию (пустые списки)
-
         ranges_settings = {'t_start_row': start_row}
         task_id = str(uuid.uuid4())
+
+        # --- DEBUG PRINT 1 ---
+        print(f"--- DEBUG [main.py]: Задача {task_id} создана ---")
 
         task_statuses[task_id] = {
             'status': 'Задача поставлена в очередь...',
@@ -153,7 +170,11 @@ def process_files():
             'owner_id': current_user.id
         }
 
-        executor.submit(
+        # --- DEBUG PRINT 2 (ИЗМЕНЕНО) ---
+        print(f"--- DEBUG [main.py]: Вызываю socketio.start_background_task для {task_id} ---")
+
+        # --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: ВОЗВРАЩАЕМ socketio.start_background_task ---
+        socketio.start_background_task(
             process_excel_hybrid,
             task_id,
             source_file_in_memory,
@@ -168,12 +189,19 @@ def process_files():
             formula_rules,
             static_value_rules,
             visible_rows_only,
-            source_cell_fill_rules  # <-- ДОБАВЛЕНО
+            source_cell_fill_rules
         )
+        # --- КОНЕЦ КЛЮЧЕВОГО ИЗМЕНЕНИЯ ---
+
+        # --- DEBUG PRINT 3 (ИЗМЕНЕНО) ---
+        print(
+            f"--- DEBUG [main.py]: socketio.start_background_task для {task_id} ВЫЗВАН (HTTP 200 будет отправлен) ---")
 
         return jsonify({'task_id': task_id})
 
     except Exception as e:
+        # --- DEBUG PRINT 4 ---
+        print(f"--- DEBUG [main.py]: КРИТИЧЕСКАЯ ОШИБКА в process_files: {e} ---")
         current_app.logger.critical(f"Критическая ошибка в process_files: {e}", exc_info=True)
         return jsonify({'error': f'Произошла внутренняя ошибка: {e}'})
 
