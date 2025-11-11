@@ -1,0 +1,11 @@
+{
+    "template_name": "Тест",
+    "excel_file": "OOH_____3.xlsx",
+    "header_start_cell": "B11",
+    "rules": [
+        {
+            "source_cell": "A11",
+            "template_col": "B"
+        }
+    ]
+}
