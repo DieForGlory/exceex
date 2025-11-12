@@ -25,23 +25,10 @@
                 </ul>
             </fieldset>
 
-            <fieldset style="width: 100%; margin-top: 1rem;">
-                <legend style="font-size: 1.1rem; color: #333;">Созданные шаблоны ({{ data.templates_created|length }})</legend>
-                {% if data.templates_created %}
-                    <ul style="padding-left: 2rem; margin-top: 0.5rem;">
-                        {% for tpl_name in data.templates_created %}
-                            <li>{{ tpl_name }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p style="padding-left: 1rem;"><em>Пользователь не создал ни одного шаблона.</em></p>
-                {% endif %}
-            </fieldset>
-
-            <fieldset style="width: 100%; margin-top: 1rem;">
-                <legend style="font-size: 1.1rem; color: #333;">Последние 10 запусков</legend>
+            <fieldset style="width: 100%; margin-top: 1.5rem;">
+                <legend style="font-size: 1.1rem; color: #333;">Последние {{ data.task_log|length }} запусков</legend>
                 {% if data.task_log %}
-                    <table style="width: 100%; border-collapse: collapse; margin-top: 0.5rem;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
                         <thead style="text-align: left; border-bottom: 2px solid var(--border-color);">
                             <tr>
                                 <th style="padding: 8px;">Время</th>
@@ -52,8 +39,19 @@
                         <tbody>
                             {% for task in data.task_log|slice(10) %}
                                 <tr style="border-bottom: 1px solid var(--border-color);">
-                                    <td style="padding: 8px; font-size: 0.9rem; color: #6c757d;">{{ task.timestamp|replace("T", " ") }}</td>
-                                    <td style="padding: 8px;">{{ task.template_name }}</td>
+
+                                    <td style="padding: 8px; font-size: 0.9rem; color: #6c757d;">
+                                        {% if task.timestamp %}
+                                            {{ task.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                            (нет данных)
+                                        {% endif %}
+                                    </td>
+
+                                    <td style="padding: 8px;">
+                                        {{ task.template_name or '(нет данных)' }}
+                                    </td>
+
                                     {% if 'Ошибка' in task.status %}
                                         <td style="padding: 8px; color: var(--error-color);">Ошибка</td>
                                     {% else %}
@@ -61,7 +59,7 @@
                                     {% endif %}
                                 </tr>
                             {% endfor %}
-                        </tbody>
+                            </tbody>
                     </table>
                 {% else %}
                      <p style="padding-left: 1rem;"><em>Запусков не было.</em></p>

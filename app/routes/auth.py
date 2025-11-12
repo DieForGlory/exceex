@@ -1,14 +1,15 @@
 # app/routes/auth.py
+import datetime  # <-- ДОБАВИТЬ ИМПОРТ
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app.services import user_service
+from app.extensions import db  # <-- ДОБАВИТЬ ИМПОРТ
 
 auth_bp = Blueprint('auth', __name__)
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    # Если пользователь уже вошел, перенаправляем на главную
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
 
@@ -19,12 +20,19 @@ def login():
 
         user = user_service.get_user_by_username(username)
 
-        # Проверяем пользователя и пароль
         if user and user.check_password(password):
             login_user(user, remember=remember)
-            flash('Вход выполнен успешно.', 'success')
 
-            # Перенаправляем на страницу, куда пользователь хотел попасть
+            # --- НАЧАЛО ИЗМЕНЕНИЯ: ЛОГИРОВАНИЕ ВРЕМЕНИ ВХОДА ---
+            try:
+                user.last_login = datetime.datetime.now()
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Ошибка обновления last_login: {e}")  # Безопасный вывод в консоль
+            # --- КОНЕЦ ИЗМЕНЕНИЯ ---
+
+            flash('Вход выполнен успешно.', 'success')
             next_page = request.args.get('next')
             return redirect(next_page or url_for('main.index'))
         else:

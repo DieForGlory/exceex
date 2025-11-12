@@ -2,7 +2,7 @@
 import re
 from openpyxl.utils import column_index_from_string
 
-ALLOWED_EXTENSIONS = {'xlsx', 'xlsm'}
+ALLOWED_EXTENSIONS = {'xls','xlsx', 'xlsm'}
 
 
 def allowed_file(filename):

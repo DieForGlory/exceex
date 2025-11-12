@@ -1,23 +1,34 @@
-# 1. Базовый образ (используем slim-версию Python 3.10)
+# Указываем базовый образ
 FROM python:3.11-slim
 
-# 2. Установка рабочей директории внутри контейнера
+# Устанавливаем рабочую директорию в контейнере
 WORKDIR /app
 
-# 3. Копирование и установка зависимостей
-# Копируем requirements.txt отдельно, чтобы Docker мог кэшировать этот слой
-COPY requirements.txt .
+# Обновляем apt-get и устанавливаем системные зависимости
+# (build-essential нужен для компиляции некоторых пакетов python, например numpy)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# 4. Установка зависимостей + gunicorn и eventlet
-# gunicorn - это production-сервер (вместо 'flask run')
-# eventlet - необходим для поддержки Flask-SocketIO
-RUN pip install --no-cache-dir -r requirements.txt gunicorn eventlet
+# Копируем файл с зависимостями
+COPY requirements.txt requirements.txt
 
-# 5. Копирование всего кода проекта в рабочую директорию /app
+# Устанавливаем зависимости Python
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копируем все файлы проекта в рабочую директорию
 COPY . .
 
-# 6. Указание команды для запуска
-# Мы говорим gunicorn запустить 'app' (переменную) из 'app.py' (файла)
-# Используем '--worker-class eventlet' для SocketIO
-# Используем порт 5015, как в вашем app.py
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5015", "manage:app"]
+# Устанавливаем переменные окружения
+ENV FLASK_APP=app.py
+ENV FLASK_RUN_HOST=0.0.0.0
+
+# Открываем порт 5000
+EXPOSE 5000
+
+# --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
+# Заменяем "flask run" на "gunicorn"
+# Эта команда запускает Gunicorn с 1 воркером eventlet (требуется для SocketIO)
+# и привязывает его к порту 5000, слушая все IP-адреса.
+# "app:app" - это ссылка на объект 'app' в файле 'app.py'
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "app:app"]

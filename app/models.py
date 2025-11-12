@@ -13,12 +13,14 @@ class User(UserMixin, db.Model):
     """
     __tablename__ = 'user'
 
-    # Мы используем String UUID в качестве PrimaryKey, чтобы
-    # сохранить совместимость со старыми 'owner_id' в templates.json
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     username = db.Column(db.String(64), index=True, unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(10), nullable=False, default='user', index=True)  # 'user' or 'admin'
+
+    # --- НОВОЕ ПОЛЕ ---
+    last_login = db.Column(db.DateTime, nullable=True)
+    # --- КОНЕЦ ИЗМЕНЕНИЯ ---
 
     # Связь: "Какие логи задач принадлежат этому пользователю?"
     task_logs = db.relationship('TaskLog', back_populates='owner', lazy='dynamic')
@@ -44,10 +46,7 @@ class TaskLog(db.Model):
     template_name = db.Column(db.String(255))
     status = db.Column(db.String(500))  # 'Готово!' или 'Ошибка: ...'
     timestamp = db.Column(db.DateTime, index=True, default=datetime.datetime.now)
-
-    # Связь: "Какой пользователь запустил эту задачу?"
     owner_id = db.Column(db.String(36), db.ForeignKey('user.id'))
-    owner = db.relationship('User', back_populates='task_logs')
 
-    def __repr__(self):
-        return f'<TaskLog {self.task_uuid} - {self.status}>'
+    # Связь: "Какая задача принадлежит какому пользователю?"
+    owner = db.relationship('User', back_populates='task_logs')

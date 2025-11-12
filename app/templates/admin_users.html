@@ -6,36 +6,22 @@
 <div class="container">
     <h1>Управление пользователями</h1>
 
-    <div class="item-card" style="margin-top: 2rem;">
-        <form action="{{ url_for('admin.create_user') }}" method="POST" style="width:100%">
-            <h3>Создать нового пользователя</h3>
-            <div class="form-group">
-                <label for="username">Имя пользователя</label>
-                <input type="text" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Пароль</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <div class="form-group">
-                <label for="role">Роль</label>
-                <select id="role" name="role">
-                    <option value="user" selected>User (Пользователь)</option>
-                    <option value="admin">Admin (Супер Админ)</option>
-                </select>
-            </div>
-            <button type="submit" class="btn btn-primary">Создать</button>
-        </form>
-    </div>
-
     <h2 style="margin-top: 2rem;">Существующие пользователи</h2>
     <div class="item-list">
     {% for user in users %}
         <div class="item-card">
             <div class="item-card-content">
                 <h3>{{ user.username }}</h3>
-                <p style="color: #6c757d;">ID: {{ user.id }} | Роль: {{ user.role }}</p>
-            </div>
+
+                <p style="color: #6c757d; line-height: 1.6;">
+                    ID: {{ user.id }} | Роль: {{ user.role }} <br>
+                    {% if user.last_login %}
+                        Последний вход: {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                    {% else %}
+                        Последний вход: (не заходил)
+                    {% endif %}
+                </p>
+                </div>
             <div class="item-card-actions">
                 {% if user.id != current_user.id %}
                 <form action="{{ url_for('admin.delete_user') }}" method="POST" onsubmit="return confirm('Удалить этого пользователя?');">
