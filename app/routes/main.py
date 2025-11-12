@@ -170,12 +170,17 @@ def process_files():
             'owner_id': current_user.id
         }
 
+        # --- ИЗМЕНЕНИЕ: ПОЛУЧАЕМ РЕАЛЬНЫЙ ЭКЗЕМПЛЯР 'app' ---
+        app_instance = current_app._get_current_object()
+        # --- КОНЕЦ ИЗМЕНЕНИЯ ---
+
         # --- DEBUG PRINT 2 (ИЗМЕНЕНО) ---
         print(f"--- DEBUG [main.py]: Вызываю socketio.start_background_task для {task_id} ---")
 
-        # --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: ВОЗВРАЩАЕМ socketio.start_background_task ---
+        # --- КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: ПЕРЕДАЕМ 'app_instance' ---
         socketio.start_background_task(
             process_excel_hybrid,
+            app_instance,  # <--- ПЕРВЫЙ АРГУМЕНТ
             task_id,
             source_file_in_memory,
             template_file_in_memory,

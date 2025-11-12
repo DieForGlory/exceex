@@ -257,7 +257,7 @@ def _emit_status(task_id, status, progress, is_complete=False, result_ready=Fals
 
 
 # --- Основная функция (КЛЮЧЕВОЕ ИЗМЕНЕНИЕ) ---
-def process_excel_hybrid(task_id, source_file_obj, template_file_obj,
+def process_excel_hybrid(app, task_id, source_file_obj, template_file_obj, # <-- 'app' - НОВЫЙ ПЕРВЫЙ АРГУМЕНТ
                          ranges, sheet_settings, template_rules, post_function,
                          original_template_filename, task_statuses, cell_mappings=None,
                          formula_rules=None, static_value_rules=None, visible_rows_only=False,
@@ -267,11 +267,9 @@ def process_excel_hybrid(task_id, source_file_obj, template_file_obj,
     owner_id = task_statuses.get(task_id, {}).get('owner_id')
     final_status = "Неизвестная ошибка"
 
-    # --- УДАЛЯЕМ СОЗДАНИЕ КОНТЕКСТА ---
-    # app = create_app()
-    # context = app.app_context()
-    # context.push()
-    # --- КОНЕЦ УДАЛЕНИЯ ---
+    context = app.app_context()
+    context.push()
+
 
     print(f"--- DEBUG [processor.py]: {task_id} - Контекст УЖЕ должен быть (из start_background_task) ---")
 
@@ -399,10 +397,7 @@ def process_excel_hybrid(task_id, source_file_obj, template_file_obj,
 
     finally:
         print(f"--- DEBUG [processor.py]: {task_id} - Вход в блок FINALLY ---")
-
-        # --- УДАЛЯЕМ context.pop() ---
-        # context.pop()
-        # --- КОНЕЦ УДАЛЕНИЯ ---
+        context.pop()
 
         if task_id in task_statuses:
             task_data = task_statuses[task_id]
